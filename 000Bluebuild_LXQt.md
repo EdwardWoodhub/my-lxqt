@@ -37,13 +37,13 @@ git push
 # 配置私钥
 配置 GitHub Secrets (最关键的一步): 现在我们需要把私钥内容交给 GitHub Actions，让它在云端自动签名。
 
-获取私钥内容：
-在终端输入 cat cosign.key，完整复制输出的那段以 -----BEGIN COSINE PRIVATE KEY----- 开头的长字符串。
+获取私钥内容：完整复制输出的那段以 -----BEGIN COSINE PRIVATE KEY----- 开头的长字符串。
+```
+cat cosign.key
+```
 
 打开网页：
-在浏览器进入你的 GitHub 仓库 -> Settings -> Secrets and variables -> Actions。
-
-Repository secrets添加以下1个 Secret：
+在浏览器进入你的 GitHub 仓库 -> Settings -> Secrets and variables -> Actions -> Repository secrets添加以下1个 Secret：
 
 名称：SIGNING_SECRET
 
@@ -79,7 +79,7 @@ systemctl reboot
 # 见证奇迹的时刻
 重启后，你会发现系统发生了以下变化：
 
-自动登录：系统启动后应该直接跳过登录界面，进入 Budgie 桌面。
+自动登录：系统启动后应该直接跳过登录界面，进入 LXQt 桌面。
 
 瞬间锁屏：进入桌面的那一秒，屏幕应该会变黑（swaylock 生效）。
 
@@ -96,10 +96,13 @@ systemctl reboot
 
 # 进阶：如何验证服务真的在跑？
 如果你连不上，可以在虚拟机终端执行以下命令查岗：
+```
+# 检查 WayVNC（注意要有 --user）：
+systemctl --user status wayvnc
 
-检查 WayVNC：systemctl --user status wayvnc（注意要有 --user）。
+# 检查 v2rayA：
+systemctl status v2raya。
 
-检查 v2rayA：systemctl status v2raya。
-
-检查防火墙：sudo firewall-cmd --list-services（看看有没有 vnc-server）。
-
+# 检查防火墙（看看有没有 vnc-server）：
+sudo firewall-cmd --list-services
+```
