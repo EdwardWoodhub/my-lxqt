@@ -47,32 +47,38 @@ modules:
     notify: true
     system:
       install:
-        - org.mozilla.firefox
         - com.google.Chrome
-        - com.github.tchx84.Flatseal
-        - com.xnview.XnViewMP
         - com.visualstudio.code
-        - net.nokyan.Resources   # 如果你想要一个漂亮的图形监控界面
-        - io.missioncenter.MissionCenter # 如果你反悔了，想把 Mission Center 加回来
+        - org.mozilla.firefox
+        - com.github.tchx84.Flatseal
+        - io.missioncenter.MissionCenter 
         - io.github.peazip.PeaZip
+        - net.nokyan.Resources   # 如果你想要一个漂亮的图形监控界面
+        - com.xnview.XnViewMP
   
 
   - type: rpm-ostree
     install:
-      - xorg-x11-drv-vmware
-      - mesa-dri-drivers
-      - xorg-x11-server-Xwayland
-      - open-vm-tools-desktop
-      - sddm
-      #- lightdm
-      #- lightdm-gtk
-      - polkit
+      - adwaita-icon-theme
+      - adwaita-cursor-theme
+      - atril
       #- budgie-desktop
       #- budgie-control-center
+      - btop
+      - dbus-x11                  # 提供 dbus-update-activation-environment (备用)
+      - engrampa
+      - fastfetch
+      - firewalld
+      - galculator
+      - git
+      - gnome-terminal
+      - hicolor-icon-theme
+      - htop
+      - labwc
+      #- lightdm
+      #- lightdm-gtk
       - lxqt-themes
       - lxqt-themes-fedora
-      - adwaita-icon-theme
-      - hicolor-icon-theme
       - lxqt-about
       - lxqt-config
       - lxqt-globalkeys
@@ -83,35 +89,28 @@ modules:
       - lxqt-qtplugin
       - lxqt-runner
       - lxqt-session
-      - pcmanfm-qt
-      - qterminal
-      - labwc
       - lxqt-wayland-session
       - lxqt-labwc-session
-      - adwaita-cursor-theme
+      - mesa-dri-drivers
+      - open-vm-tools-desktop
+      - pluma                     # 文本编辑器(备用)
+      - polkit
+      - pcmanfm-qt
+      - qterminal
       - screengrab
-      # --- 修复工具补丁 ---
-      - dbus-x11                  # 提供 dbus-update-activation-environment (备用)
+      - sddm
+      - syncthing
+      - thunar
+      - thunar-archive-plugin
+      - v2raya
+      - wayvnc
+      - xorg-x11-drv-vmware
+      - xorg-x11-server-Xwayland
       - xdg-desktop-portal-gtk    # 修复窗口弹出
       - xdg-user-dirs
       - xdg-desktop-portal
-      # --- 换装更稳的文件管理器 ---
-      - thunar
-      - thunar-archive-plugin
-      - pluma                     # 文本编辑器备胎
-      - atril
-      - engrampa
-      - galculator
-      # --- 生产力与同步 ---
-      - syncthing
-      - wayvnc
-      - v2raya
-      - firewalld
-      - git
-      - fastfetch
-      - gnome-terminal
-      - htop
-      - btop
+      
+      
 
   # ------------------------------------------------------------
   # 3. 系统逻辑
