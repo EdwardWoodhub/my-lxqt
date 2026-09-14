@@ -91,6 +91,7 @@ modules:
       - lxqt-session
       - lxqt-wayland-session
       - lxqt-labwc-session
+      - meld
       - mesa-dri-drivers
       - open-vm-tools-desktop
       - pluma                     # 文本编辑器(备用)
