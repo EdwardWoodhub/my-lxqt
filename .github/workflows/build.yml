@@ -1,8 +1,7 @@
-name: bluebuild
+name: build-and-sync-image
 on:
   schedule:
-    - cron:
-        "27 20 * * *" # 每天 CST 04:27 构建
+    - cron: "27 20 * * *"
   push:
     paths-ignore:
       - "**.md"
@@ -13,56 +12,69 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
   cancel-in-progress: true
 
+env:
+  IMAGE_NAME: my-lxqt-vm
+  GHCR_REGISTRY: ghcr.io
+
 jobs:
-  bluebuild:
-    name: Build Custom Image
+  build:
+    name: Build & Push Container Image
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-      id-token: write # 签名与分发镜像所需的权限
-    strategy:
-      fail-fast: false
-      matrix:
-        recipe:
-          - recipe.yml
+      id-token: write
+
     steps:
-      - name: Build Custom Image
-        uses: blue-build/github-action@v1.12
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 释放磁盘空间（替代 maximize_build_space）
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+
+      # 设置 Buildx 引擎
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 登录 GitHub Packages (GHCR)
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
         with:
-          recipe: ${{ matrix.recipe }}
-          # 1. 私钥内容
-          cosign_private_key: ${{ secrets.SIGNING_SECRET }}
-          # 2. 补上这一行：私钥的解密密码
-          # cosign_password: ${{ secrets.COSIGN_PASSWORD }}
-          registry_token: ${{ github.token }}
-          pr_event_number: ${{ github.event.number }}
+          registry: ${{ env.GHCR_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-          # 建议开启，因为安装了 v2rayA 和多个平铺桌面组件，镜像体积不会太小
-          maximize_build_space: true
+      # 构建并推送到 GHCR
+      - name: Build and Push to GHCR
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ env.GHCR_REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
 
-# =========================================================================
-      # 【新增步骤 1】：登录阿里云 ACR（仅在主分支 push 或手动触发时执行，避免 PR 浪费）
-      # =========================================================================
+      # 登录阿里云 ACR
       - name: Log in to Aliyun ACR
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-        uses: redhat-actions/podman-login@v1
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+        uses: docker/login-action@v3
         with:
           registry: ${{ secrets.ALIYUN_ACR_REGISTRY }}
           username: ${{ secrets.ALIYUN_ACR_USERNAME }}
           password: ${{ secrets.ALIYUN_ACR_PASSWORD }}
 
-      # =========================================================================
-      # 【新增步骤 2】：使用 Skopeo 零开销将镜像从 GHCR 直接同步到阿里云 ACR
-      # =========================================================================
+      # 使用 Skopeo 同步镜像至阿里云 ACR
       - name: Sync OCI Image from GHCR to Aliyun ACR
         if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
         run: |
-          echo "Syncing latest image layers to Aliyun ACR in compatibility mode..."
           skopeo copy \
             --src-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
             --dest-creds "${{ secrets.ALIYUN_ACR_USERNAME }}:${{ secrets.ALIYUN_ACR_PASSWORD }}" \
             --dest-compress-format gzip \
             --format v2s2 \
-            docker://ghcr.io/edwardwoodhub/my-lxqt-vm:latest \
-            docker://${{ secrets.ALIYUN_ACR_REGISTRY }}/edwardwoodhub/my-lxqt-vm:latest
+            docker://${{ env.GHCR_REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest \
+            docker://${{ secrets.ALIYUN_ACR_REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
