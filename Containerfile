@@ -1,4 +1,4 @@
-FROM ghcr.io/ublue-os/base-main:44
+FROM quay.io/fedora/fedora-bootc:44
 
 # 1. 配置软件源 (v2rayA Copr 源)
 RUN { \
