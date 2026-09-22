@@ -45,16 +45,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 不使用 buildx，直接使用原生 docker build 与 docker push
-      # 并将 owner 强制转换为小写，解决 "repository name must be lowercase"
+      # 不使用 buildx，直接使用原生 docker build 并指定 -f ./Containerfile
       - name: Build and Push Docker Image
         run: |
-          # 强制将用户名转为纯小写
+          # 强制将用户名转为小写，避免 "repository name must be lowercase"
           OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           IMAGE_TAG="${{ env.GHCR_REGISTRY }}/${OWNER_LOWER}/${{ env.IMAGE_NAME }}:latest"
           
-          echo "Building image: $IMAGE_TAG"
-          docker build -t "$IMAGE_TAG" -f ./Dockerfile .
+          echo "Building image: $IMAGE_TAG using ./Containerfile"
+          docker build -t "$IMAGE_TAG" -f ./Containerfile .
           
           if [ "${{ github.event_name }}" != "pull_request" ]; then
             echo "Pushing image to GHCR..."
