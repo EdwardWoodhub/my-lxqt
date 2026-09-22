@@ -2,18 +2,9 @@
 FROM quay.io/fedora/fedora-bootc:44
 
 # 2. 配置软件源 (v2rayA Copr 源)
-RUN cat << 'EOF' > /etc/yum.repos.d/_copr_zhullyb-v2rayA.repo
-[copr:copr.fedorainfracloud.org:zhullyb:v2rayA]
-name=Copr repo for v2rayA owned by zhullyb
-baseurl=https://download.copr.fedorainfracloud.org/results/zhullyb/v2rayA/fedora-44-$basearch/
-type=rpm-md
-skip_if_unavailable=True
-gpgcheck=1
-gpgkey=https://download.copr.fedorainfracloud.org/results/zhullyb/v2rayA/pubkey.gpg
-repo_gpgcheck=0
-enabled=1
-enabled_metadata=1
-EOF
+# 启用 Copr 仓库并安装 v2rayA
+RUN dnf copr enable -y zhullyb/v2rayA
+
 
 # 3. 安装 RPM 软件包并清理缓存
 RUN dnf install -y \
