@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM ghcr.io/ublue-os/base-main:44
 
 # 1. 配置软件源 (v2rayA Copr 源)
@@ -14,7 +15,7 @@ enabled=1
 enabled_metadata=1
 EOF
 
-# 2. 安装 RPM 软件包并清理缓存
+# 2. 安装 RPM 软件包并固化 OSTree 层
 RUN rpm-ostree install \
     adwaita-icon-theme \
     adwaita-cursor-theme \
@@ -87,7 +88,7 @@ RUN echo "WLR_NO_HARDWARE_CURSORS=1" >> /etc/environment && \
     firewall-offline-cmd --add-port=5900/tcp && \
     firewall-offline-cmd --add-port=8384/tcp && \
     mkdir -p /etc/sddm.conf.d && \
-    cat <<EOF > /etc/sddm.conf.d/autologin.conf
+    cat << 'EOF' > /etc/sddm.conf.d/autologin.conf
 [Autologin]
 User=edward
 Session=lxqt-wayland
@@ -97,7 +98,7 @@ EOF
 
 # 5. 配置用户级 Systemd 单元文件 (WayVNC 与 Syncthing)
 RUN mkdir -p /usr/lib/systemd/user/ && \
-    cat <<EOF > /usr/lib/systemd/user/wayvnc.service
+    cat << 'EOF' > /usr/lib/systemd/user/wayvnc.service
 [Unit]
 Description=WayVNC Service
 After=wayland-session.target
@@ -114,7 +115,8 @@ RestartSec=10
 [Install]
 WantedBy=default.target
 EOF
-RUN cat <<EOF > /usr/lib/systemd/user/syncthing.service
+
+RUN cat << 'EOF' > /usr/lib/systemd/user/syncthing.service
 [Unit]
 Description=Syncthing Service
 After=network.target
