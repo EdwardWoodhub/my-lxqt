@@ -1,10 +1,9 @@
+# syntax=docker/dockerfile:1
 # 1. 基础镜像
 FROM quay.io/fedora/fedora-bootc:44
 
 # 2. 配置软件源 (v2rayA Copr 源)
-# 启用 Copr 仓库并安装 v2rayA
 RUN dnf copr enable -y zhullyb/v2rayA
-
 
 # 3. 安装 RPM 软件包并清理缓存
 RUN dnf install -y \
@@ -70,7 +69,7 @@ RUN mkdir -p /var/lib/systemd/linger && \
     firewall-offline-cmd --add-port=8384/tcp
 
 # 6. 配置 SDDM 自动登录
-RUN mkdir -p /etc/sddm.conf.d && \
+RUN mkdir -p /etc/sddm.conf.d
 RUN cat << 'EOF' > /etc/sddm.conf.d/autologin.conf
 [Autologin]
 User=edward
@@ -80,7 +79,8 @@ DisplayServer=wayland
 EOF
 
 # 7. 配置用户级别的 systemd 服务 (WayVNC 与 Syncthing)
-RUN mkdir -p /usr/lib/systemd/user/ && \
+RUN mkdir -p /usr/lib/systemd/user/
+
 RUN cat << 'EOF' > /usr/lib/systemd/user/wayvnc.service
 [Unit]
 Description=WayVNC Service
@@ -122,7 +122,8 @@ RUN systemctl enable sddm.service v2raya.service vmtoolsd.service firewalld.serv
     ln -sf /usr/lib/systemd/user/syncthing.service /usr/lib/systemd/user/default.target.wants/syncthing.service
 
 # 9. Flatpak 自动预装配置 (替代 recipe 中的 default-flatpaks 模块)
-RUN mkdir -p /etc/flatpak/remotes.d && \
+RUN mkdir -p /etc/flatpak/remotes.d
+
 RUN cat << 'EOF' > /usr/libexec/install-flatpaks.sh
 #!/bin/bash
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -141,6 +142,7 @@ for app in "${FLATPAKS[@]}"; do
 done
 systemctl disable install-flatpaks.service
 EOF
+
 RUN chmod +x /usr/libexec/install-flatpaks.sh
 
 RUN cat << 'EOF' > /usr/lib/systemd/system/install-flatpaks.service
