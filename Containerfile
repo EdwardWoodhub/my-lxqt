@@ -24,6 +24,7 @@ RUN dnf install -y --setopt=install_weak_deps=False \
     engrampa \
     fastfetch \
     firewalld \
+    firefox \
     flatpak \
     galculator \
     git \
@@ -69,7 +70,6 @@ RUN dnf install -y --setopt=install_weak_deps=False \
 # 3. 预装系统级 Flatpak 应用
 RUN flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo && \
     flatpak --system install -y flathub \
-      com.google.Chrome \
       com.visualstudio.code \
       org.mozilla.firefox \
       com.github.tchx84.Flatseal \
