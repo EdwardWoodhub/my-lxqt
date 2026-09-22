@@ -81,7 +81,7 @@ EOF
 
 # 7. 配置用户级别的 systemd 服务 (WayVNC 与 Syncthing)
 RUN mkdir -p /usr/lib/systemd/user/ && \
-    cat << 'EOF' > /usr/lib/systemd/user/wayvnc.service
+RUN cat << 'EOF' > /usr/lib/systemd/user/wayvnc.service
 [Unit]
 Description=WayVNC Service
 After=wayland-session.target
