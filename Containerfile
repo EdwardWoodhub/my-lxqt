@@ -1,22 +1,21 @@
-# syntax=docker/dockerfile:1
 FROM ghcr.io/ublue-os/base-main:44
 
 # 1. 配置软件源 (v2rayA Copr 源)
-RUN cat << 'EOF' > /etc/yum.repos.d/_copr_zhullyb-v2rayA.repo
-[copr:copr.fedorainfracloud.org:zhullyb:v2rayA]
-name=Copr repo for v2rayA owned by zhullyb
-baseurl=https://download.copr.fedorainfracloud.org/results/zhullyb/v2rayA/fedora-44-$basearch/
-type=rpm-md
-skip_if_unavailable=True
-gpgcheck=1
-gpgkey=https://download.copr.fedorainfracloud.org/results/zhullyb/v2rayA/pubkey.gpg
-repo_gpgcheck=0
-enabled=1
-enabled_metadata=1
-EOF
+RUN { \
+    echo '[copr:copr.fedorainfracloud.org:zhullyb:v2rayA]'; \
+    echo 'name=Copr repo for v2rayA owned by zhullyb'; \
+    echo 'baseurl=https://download.copr.fedorainfracloud.org/results/zhullyb/v2rayA/fedora-$releasever-$basearch/'; \
+    echo 'type=rpm-md'; \
+    echo 'skip_if_unavailable=True'; \
+    echo 'gpgcheck=1'; \
+    echo 'gpgkey=https://download.copr.fedorainfracloud.org/results/zhullyb/v2rayA/pubkey.gpg'; \
+    echo 'repo_gpgcheck=0'; \
+    echo 'enabled=1'; \
+    echo 'enabled_metadata=1'; \
+} > /etc/yum.repos.d/_copr_zhullyb-v2rayA.repo
 
-# 2. 安装 RPM 软件包并固化 OSTree 层
-RUN rpm-ostree install \
+# 2. 安装 RPM 软件包 (纯 dnf)
+RUN dnf install -y --setopt=install_weak_deps=False \
     adwaita-icon-theme \
     adwaita-cursor-theme \
     atril \
@@ -25,6 +24,7 @@ RUN rpm-ostree install \
     engrampa \
     fastfetch \
     firewalld \
+    flatpak \
     galculator \
     git \
     gnome-terminal \
@@ -64,7 +64,7 @@ RUN rpm-ostree install \
     xdg-desktop-portal-gtk \
     xdg-user-dirs \
     xdg-desktop-portal && \
-    ostree container commit
+    dnf clean all
 
 # 3. 预装系统级 Flatpak 应用
 RUN flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo && \
@@ -88,49 +88,48 @@ RUN echo "WLR_NO_HARDWARE_CURSORS=1" >> /etc/environment && \
     firewall-offline-cmd --add-port=5900/tcp && \
     firewall-offline-cmd --add-port=8384/tcp && \
     mkdir -p /etc/sddm.conf.d && \
-    cat << 'EOF' > /etc/sddm.conf.d/autologin.conf
-[Autologin]
-User=edward
-Session=lxqt-wayland
-[General]
-DisplayServer=wayland
-EOF
+    { \
+        echo '[Autologin]'; \
+        echo 'User=edward'; \
+        echo 'Session=lxqt-wayland'; \
+        echo '[General]'; \
+        echo 'DisplayServer=wayland'; \
+    } > /etc/sddm.conf.d/autologin.conf
 
 # 5. 配置用户级 Systemd 单元文件 (WayVNC 与 Syncthing)
 RUN mkdir -p /usr/lib/systemd/user/ && \
-    cat << 'EOF' > /usr/lib/systemd/user/wayvnc.service
-[Unit]
-Description=WayVNC Service
-After=wayland-session.target
-
-[Service]
-Type=simple
-Environment=WAYLAND_DISPLAY=wayland-0
-Environment=XDG_RUNTIME_DIR=%t
-ExecStartPre=/usr/bin/systemctl --user import-environment WAYLAND_DISPLAY XDG_RUNTIME_DIR
-ExecStart=/usr/bin/wayvnc --render-cursor 0.0.0.0 5900
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=default.target
-EOF
-
-RUN cat << 'EOF' > /usr/lib/systemd/user/syncthing.service
-[Unit]
-Description=Syncthing Service
-After=network.target
-
-[Service]
-Environment=HOME=%h
-ExecStartPre=/usr/bin/mkdir -p %h/.config/syncthing
-ExecStart=/usr/bin/syncthing serve --no-browser --no-restart --gui-address=127.0.0.1:8384
-Restart=on-failure
-RestartSec=10
-
-[Install]
-WantedBy=default.target
-EOF
+    { \
+        echo '[Unit]'; \
+        echo 'Description=WayVNC Service'; \
+        echo 'After=wayland-session.target'; \
+        echo ''; \
+        echo '[Service]'; \
+        echo 'Type=simple'; \
+        echo 'Environment=WAYLAND_DISPLAY=wayland-0'; \
+        echo 'Environment=XDG_RUNTIME_DIR=%t'; \
+        echo 'ExecStartPre=/usr/bin/systemctl --user import-environment WAYLAND_DISPLAY XDG_RUNTIME_DIR'; \
+        echo 'ExecStart=/usr/bin/wayvnc --render-cursor 0.0.0.0 5900'; \
+        echo 'Restart=always'; \
+        echo 'RestartSec=10'; \
+        echo ''; \
+        echo '[Install]'; \
+        echo 'WantedBy=default.target'; \
+    } > /usr/lib/systemd/user/wayvnc.service && \
+    { \
+        echo '[Unit]'; \
+        echo 'Description=Syncthing Service'; \
+        echo 'After=network.target'; \
+        echo ''; \
+        echo '[Service]'; \
+        echo 'Environment=HOME=%h'; \
+        echo 'ExecStartPre=/usr/bin/mkdir -p %h/.config/syncthing'; \
+        echo 'ExecStart=/usr/bin/syncthing serve --no-browser --no-restart --gui-address=127.0.0.1:8384'; \
+        echo 'Restart=on-failure'; \
+        echo 'RestartSec=10'; \
+        echo ''; \
+        echo '[Install]'; \
+        echo 'WantedBy=default.target'; \
+    } > /usr/lib/systemd/user/syncthing.service
 
 # 6. 激活系统服务与全局用户服务
 RUN systemctl enable sddm.service v2raya.service vmtoolsd.service firewalld.service && \
