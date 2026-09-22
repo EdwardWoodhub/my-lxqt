@@ -1,9 +1,8 @@
 # 1. 基础镜像
 FROM quay.io/fedora/fedora-bootc:44
 
-# 2. 配置软件源 (v2rayA Copr 源)
-RUN curl -fsSL -o /etc/yum.repos.d/_copr_zhullyb-v2rayA.repo \
-    https://copr.fedorainfracloud.org/coprs/zhullyb/v2rayA/repo/fedora-rawhide/zhullyb-v2rayA-fedora-rawhide.repo
+# 2. 配置软件源 (使用兼容的 fedora-43 编译包路径，避免 rawhide 404)
+RUN printf '[copr:copr.fedorainfracloud.org:zhullyb:v2rayA]\nname=Copr repo for v2rayA owned by zhullyb\nbaseurl=https://download.copr.fedorainfracloud.org/results/zhullyb/v2rayA/fedora-43-$basearch/\ntype=rpm-md\nskip_if_unavailable=True\ngpgcheck=1\ngpgkey=https://download.copr.fedorainfracloud.org/results/zhullyb/v2rayA/pubkey.gpg\nrepo_gpgcheck=0\nenabled=1\nenabled_metadata=1\n' > /etc/yum.repos.d/_copr_zhullyb-v2rayA.repo
 
 # 3. 安装 RPM 软件包并清理缓存
 RUN dnf install -y \
