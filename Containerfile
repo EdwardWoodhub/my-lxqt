@@ -1,10 +1,9 @@
-# syntax=docker/dockerfile:1
 # 1. 基础镜像
 FROM quay.io/fedora/fedora-bootc:44
 
 # 2. 配置软件源 (v2rayA Copr 源)
-RUN dnf -y copr enable zhullyb/v2rayA \
-    && echo "net.ipv4.ip_forward = 1" > /etc/sysctl.d/99-ip-forward.conf
+RUN curl -fsSL -o /etc/yum.repos.d/_copr_zhullyb-v2rayA.repo \
+    https://copr.fedorainfracloud.org/coprs/zhullyb/v2rayA/repo/fedora-rawhide/zhullyb-v2rayA-fedora-rawhide.repo
 
 # 3. 安装 RPM 软件包并清理缓存
 RUN dnf install -y \
@@ -70,51 +69,13 @@ RUN mkdir -p /var/lib/systemd/linger && \
     firewall-offline-cmd --add-port=8384/tcp
 
 # 6. 配置 SDDM 自动登录
-RUN mkdir -p /etc/sddm.conf.d
-RUN cat << 'EOF' > /etc/sddm.conf.d/autologin.conf
-[Autologin]
-User=edward
-Session=lxqt-wayland
-[General]
-DisplayServer=wayland
-EOF
+RUN mkdir -p /etc/sddm.conf.d && \
+    printf '[Autologin]\nUser=edward\nSession=lxqt-wayland\n[General]\nDisplayServer=wayland\n' > /etc/sddm.conf.d/autologin.conf
 
 # 7. 配置用户级别的 systemd 服务 (WayVNC 与 Syncthing)
-RUN mkdir -p /usr/lib/systemd/user/
-
-RUN cat << 'EOF' > /usr/lib/systemd/user/wayvnc.service
-[Unit]
-Description=WayVNC Service
-After=wayland-session.target
-
-[Service]
-Type=simple
-Environment=WAYLAND_DISPLAY=wayland-0
-Environment=XDG_RUNTIME_DIR=%t
-ExecStartPre=/usr/bin/systemctl --user import-environment WAYLAND_DISPLAY XDG_RUNTIME_DIR
-ExecStart=/usr/bin/wayvnc --render-cursor 0.0.0.0 5900
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=default.target
-EOF
-
-RUN cat << 'EOF' > /usr/lib/systemd/user/syncthing.service
-[Unit]
-Description=Syncthing Service
-After=network.target
-
-[Service]
-Environment=HOME=%h
-ExecStartPre=/usr/bin/mkdir -p %h/.config/syncthing
-ExecStart=/usr/bin/syncthing serve --no-browser --no-restart --gui-address=127.0.0.1:8384
-Restart=on-failure
-RestartSec=10
-
-[Install]
-WantedBy=default.target
-EOF
+RUN mkdir -p /usr/lib/systemd/user/ && \
+    printf '[Unit]\nDescription=WayVNC Service\nAfter=wayland-session.target\n\n[Service]\nType=simple\nEnvironment=WAYLAND_DISPLAY=wayland-0\nEnvironment=XDG_RUNTIME_DIR=%%t\nExecStartPre=/usr/bin/systemctl --user import-environment WAYLAND_DISPLAY XDG_RUNTIME_DIR\nExecStart=/usr/bin/wayvnc --render-cursor 0.0.0.0 5900\nRestart=always\nRestartSec=10\n\n[Install]\nWantedBy=default.target\n' > /usr/lib/systemd/user/wayvnc.service && \
+    printf '[Unit]\nDescription=Syncthing Service\nAfter=network.target\n\n[Service]\nEnvironment=HOME=%%h\nExecStartPre=/usr/bin/mkdir -p %%h/.config/syncthing\nExecStart=/usr/bin/syncthing serve --no-browser --no-restart --gui-address=127.0.0.1:8384\nRestart=on-failure\nRestartSec=10\n\n[Install]\nWantedBy=default.target\n' > /usr/lib/systemd/user/syncthing.service
 
 # 8. 启用系统级与用户级服务软链接
 RUN systemctl enable sddm.service v2raya.service vmtoolsd.service firewalld.service && \
@@ -122,45 +83,9 @@ RUN systemctl enable sddm.service v2raya.service vmtoolsd.service firewalld.serv
     ln -sf /usr/lib/systemd/user/wayvnc.service /usr/lib/systemd/user/default.target.wants/wayvnc.service && \
     ln -sf /usr/lib/systemd/user/syncthing.service /usr/lib/systemd/user/default.target.wants/syncthing.service
 
-# 9. Flatpak 自动预装配置 (替代 recipe 中的 default-flatpaks 模块)
-RUN mkdir -p /etc/flatpak/remotes.d
-
-RUN cat << 'EOF' > /usr/libexec/install-flatpaks.sh
-#!/bin/bash
-flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-FLATPAKS=(
-  com.google.Chrome
-  com.visualstudio.code
-  org.mozilla.firefox
-  com.github.tchx84.Flatseal
-  io.missioncenter.MissionCenter
-  io.github.peazip.PeaZip
-  net.nokyan.Resources
-  com.xnview.XnViewMP
-)
-for app in "${FLATPAKS[@]}"; do
-  flatpak install --system -y flathub "$app" || true
-done
-systemctl disable install-flatpaks.service
-EOF
-
-RUN chmod +x /usr/libexec/install-flatpaks.sh
-
-RUN cat << 'EOF' > /usr/lib/systemd/system/install-flatpaks.service
-[Unit]
-Description=Initial Flatpak Applications Installation
-After=network-online.target
-Wants=network-online.target
-ConditionPathExists=!/var/lib/flatpaks-installed
-
-[Service]
-Type=oneshot
-ExecStart=/usr/libexec/install-flatpaks.sh
-ExecStartPost=/usr/bin/touch /var/lib/flatpaks-installed
-RemainAfterExit=yes
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-RUN systemctl enable install-flatpaks.service
+# 9. Flatpak 自动预装配置
+RUN mkdir -p /etc/flatpak/remotes.d && \
+    printf '#!/bin/bash\nflatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo\nFLATPAKS=(\n  com.google.Chrome\n  com.visualstudio.code\n  org.mozilla.firefox\n  com.github.tchx84.Flatseal\n  io.missioncenter.MissionCenter\n  io.github.peazip.PeaZip\n  net.nokyan.Resources\n  com.xnview.XnViewMP\n)\nfor app in "${FLATPAKS[@]}"; do\n  flatpak install --system -y flathub "$app" || true\ndone\nsystemctl disable install-flatpaks.service\n' > /usr/libexec/install-flatpaks.sh && \
+    chmod +x /usr/libexec/install-flatpaks.sh && \
+    printf '[Unit]\nDescription=Initial Flatpak Applications Installation\nAfter=network-online.target\nWants=network-online.target\nConditionPathExists=!/var/lib/flatpaks-installed\n\n[Service]\nType=oneshot\nExecStart=/usr/libexec/install-flatpaks.sh\nExecStartPost=/usr/bin/touch /var/lib/flatpaks-installed\nRemainAfterExit=yes\n\n[Install]\nWantedBy=multi-user.target\n' > /usr/lib/systemd/system/install-flatpaks.service && \
+    systemctl enable install-flatpaks.service
