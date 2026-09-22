@@ -71,7 +71,7 @@ RUN mkdir -p /var/lib/systemd/linger && \
 
 # 6. 配置 SDDM 自动登录
 RUN mkdir -p /etc/sddm.conf.d && \
-    cat << 'EOF' > /etc/sddm.conf.d/autologin.conf
+RUN cat << 'EOF' > /etc/sddm.conf.d/autologin.conf
 [Autologin]
 User=edward
 Session=lxqt-wayland
@@ -123,7 +123,7 @@ RUN systemctl enable sddm.service v2raya.service vmtoolsd.service firewalld.serv
 
 # 9. Flatpak 自动预装配置 (替代 recipe 中的 default-flatpaks 模块)
 RUN mkdir -p /etc/flatpak/remotes.d && \
-    cat << 'EOF' > /usr/libexec/install-flatpaks.sh
+RUN cat << 'EOF' > /usr/libexec/install-flatpaks.sh
 #!/bin/bash
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 FLATPAKS=(
