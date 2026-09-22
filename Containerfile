@@ -3,7 +3,8 @@
 FROM quay.io/fedora/fedora-bootc:44
 
 # 2. 配置软件源 (v2rayA Copr 源)
-RUN dnf copr enable -y zhullyb/v2rayA
+RUN dnf -y copr enable zhullyb/v2rayA \
+    && echo "net.ipv4.ip_forward = 1" > /etc/sysctl.d/99-ip-forward.conf
 
 # 3. 安装 RPM 软件包并清理缓存
 RUN dnf install -y \
