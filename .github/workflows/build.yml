@@ -1,4 +1,4 @@
-name: build-and-sync-image
+name: Build LXQt OS Based On Fedora 44 Bootc Image
 on:
   schedule:
     - cron: "27 20 * * *"
