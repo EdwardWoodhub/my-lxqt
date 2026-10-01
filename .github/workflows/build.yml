@@ -68,17 +68,22 @@ jobs:
           OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           IMAGE_TAG="${{ env.GHCR_REGISTRY }}/${OWNER_LOWER}/${{ env.IMAGE_NAME }}:latest"
 
-          # 使用 bootc-image-builder 将 bootc 容器镜像转为 anaconda-iso 安装光盘
-          sudo docker run --rm -i --privileged \
+          # 1. 登录 podman 并将刚刚推送到 GHCR 的镜像拉取到本地 containers/storage
+          echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ${{ env.GHCR_REGISTRY }} -u ${{ github.actor }} --password-stdin
+          sudo podman pull "$IMAGE_TAG"
+
+          # 2. 运行 bootc-image-builder（移除了废弃的 --local 参数）
+          sudo podman run --rm -i --privileged \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
             -v $(pwd)/output:/output \
             quay.io/centos-bootc/bootc-image-builder:latest \
             --type anaconda-iso \
-            --local \
             "$IMAGE_TAG"
 
-          # 将生成的 ISO 移动并重命名为统一名称
+          # 3. 移动生成的 ISO
           sudo mv output/bootiso/install.iso ./${{ env.IMAGE_NAME }}.iso
+      
+      
 
       # 将大于 2GB 的 ISO 切割为分卷（避免超出上传限制）
       - name: Split ISO
