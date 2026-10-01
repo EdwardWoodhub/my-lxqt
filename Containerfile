@@ -19,6 +19,7 @@ RUN dnf install -y \
     gnome-terminal \
     hicolor-icon-theme \
     htop \
+    konsole \
     labwc \
     lxqt-themes \
     lxqt-themes-fedora \
