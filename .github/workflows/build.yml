@@ -78,6 +78,7 @@ jobs:
             -v $(pwd)/output:/output \
             quay.io/centos-bootc/bootc-image-builder:latest \
             --type anaconda-iso \
+            --rootfs ext4 \
             "$IMAGE_TAG"
 
           # 3. 移动生成的 ISO
