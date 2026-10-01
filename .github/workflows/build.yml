@@ -21,7 +21,7 @@ jobs:
     name: Build & Push Container Image
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
       id-token: write
 
@@ -60,6 +60,43 @@ jobs:
             docker push "$IMAGE_TAG"
           fi
 
+      # 构建 Live/安装 ISO (使用 bootc-image-builder)
+      - name: Build Bootc Live ISO
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+        run: |
+          mkdir -p output
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE_TAG="${{ env.GHCR_REGISTRY }}/${OWNER_LOWER}/${{ env.IMAGE_NAME }}:latest"
+
+          # 使用 bootc-image-builder 将 bootc 容器镜像转为 anaconda-iso 安装光盘
+          sudo docker run --rm -i --privileged \
+            -v /var/lib/containers/storage:/var/lib/containers/storage \
+            -v $(pwd)/output:/output \
+            quay.io/centos-bootc/bootc-image-builder:latest \
+            --type anaconda-iso \
+            --local \
+            "$IMAGE_TAG"
+
+          # 将生成的 ISO 移动并重命名为统一名称
+          sudo mv output/bootiso/install.iso ./${{ env.IMAGE_NAME }}.iso
+
+      # 将大于 2GB 的 ISO 切割为分卷（避免超出上传限制）
+      - name: Split ISO
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+        run: |
+          split -b 1500M ${{ env.IMAGE_NAME }}.iso ${{ env.IMAGE_NAME }}.iso.part-
+          ls -lh ${{ env.IMAGE_NAME }}.iso.part-*
+
+      # 发布 ISO 分卷至 GitHub Releases
+      - name: Publish ISO to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+        with:
+          tag_name: "release-${{ github.run_number }}"
+          name: "LiveISO Release - Run ${{ github.run_number }}"
+          files: ${{ env.IMAGE_NAME }}.iso.part-*
+          generate_release_notes: true
+      
       # 登录阿里云 ACR
       - name: Log in to Aliyun ACR
         if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
