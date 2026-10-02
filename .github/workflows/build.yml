@@ -19,7 +19,7 @@ env:
 jobs:
   build:
     name: Build & Push Container Image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       packages: write
