@@ -45,6 +45,7 @@ RUN dnf install -y \
     screengrab \
     sddm \
     syncthing \
+    tilix \
     thunar \
     thunar-archive-plugin \
     v2raya \
