@@ -1,0 +1,26 @@
+{
+  "name": "General Codespace Configuration",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+
+  "features": {
+    "ghcr.io/devcontainers/features/node:2": {
+      "version": "24"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "evidence.evidence-vscode",
+        "jnoortheen.nix-ide",
+        "mathworks.language-matlab",
+        "mechatroner.rainbow-csv",
+        "ms-azuretools.vscode-containers",
+        "oderwat.indent-rainbow",
+        "redhat.vscode-yaml",
+        "svelte.svelte-vscode",
+        "yy0931.save-as-root"
+      ]
+    }
+  }
+}
