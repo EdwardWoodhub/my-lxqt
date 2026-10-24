@@ -38,9 +38,10 @@ RUN dnf install -y \
     meld \
     mesa-dri-drivers \
     open-vm-tools-desktop \
+    pcmanfm-qt \
     pluma \
     polkit \
-    pcmanfm-qt \
+    python3 \
     qterminal \
     screengrab \
     sddm \
@@ -48,6 +49,7 @@ RUN dnf install -y \
     tilix \
     thunar \
     thunar-archive-plugin \
+    uv \
     v2raya \
     wayvnc \
     xorg-x11-drv-vmware \
